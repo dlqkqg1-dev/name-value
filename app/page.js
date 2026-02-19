@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const PRIMARY_PINK = "#ffafcc";
@@ -151,6 +151,7 @@ export default function HomePage() {
   const [name, setName] = useState(initialName);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const cardRef = useRef(null);
 
   const hasResult = useMemo(
     () => isKoreanName(initialName),
@@ -193,314 +194,25 @@ export default function HomePage() {
 
   const handleShare = useCallback(async () => {
     try {
-      if (!result) return;
+      if (!result || !cardRef.current) return;
 
-      const html2canvasModule = await import("html2canvas");
-      const html2canvas = html2canvasModule.default;
-
-      const offscreen = document.createElement("div");
-      offscreen.style.position = "fixed";
-      offscreen.style.left = "-9999px";
-      offscreen.style.top = "0px";
-      offscreen.style.width = "480px";
-      offscreen.style.backgroundColor = "#ffffff";
-      offscreen.style.color = "#111111";
-      offscreen.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      offscreen.style.boxSizing = "border-box";
-      offscreen.style.lineHeight = "1.2";
-      offscreen.style.verticalAlign = "top";
-
-      const card = document.createElement("div");
-      card.style.position = "relative";
-      card.style.width = "480px";
-      card.style.borderRadius = "16px";
-      card.style.border = "1px solid #e0e0e0";
-      card.style.backgroundColor = "#f8f8f8";
-      card.style.boxShadow = "0 4px 20px rgba(0,0,0,0.08)";
-      card.style.padding = "32px 32px 28px 32px";
-      card.style.boxSizing = "border-box";
-      card.style.lineHeight = "1.2";
-      card.style.verticalAlign = "top";
-
-      const gradLine = document.createElement("div");
-      gradLine.style.width = "100%";
-      gradLine.style.height = "4px";
-      gradLine.style.backgroundImage =
-        "linear-gradient(to right, #ffafcc, #bde0fe)";
-      gradLine.style.borderRadius = "9999px";
-      gradLine.style.marginBottom = "20px";
-      gradLine.style.lineHeight = "1.2";
-      gradLine.style.verticalAlign = "top";
-      card.appendChild(gradLine);
-
-      const topRow = document.createElement("div");
-      topRow.style.position = "relative";
-      topRow.style.width = "100%";
-      card.appendChild(topRow);
-
-      const leftCol = document.createElement("div");
-      leftCol.style.display = "block";
-      leftCol.style.position = "relative";
-      leftCol.style.paddingRight = "120px";
-      leftCol.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      leftCol.style.lineHeight = "1.2";
-      leftCol.style.verticalAlign = "top";
-      topRow.appendChild(leftCol);
-
-      const badge = document.createElement("div");
-      badge.textContent = "✨ 이름 포트폴리오";
-      badge.style.display = "inline-block";
-      badge.style.borderRadius = "9999px";
-      badge.style.backgroundColor = "#ffafcc";
-      badge.style.padding = "8px 16px";
-      badge.style.fontSize = "11px";
-      badge.style.fontWeight = "600";
-      badge.style.color = "#ffffff";
-      badge.style.marginBottom = "10px";
-      badge.style.fontFamily = '"Arial",sans-serif';
-      badge.style.lineHeight = "0.9";
-      badge.style.verticalAlign = "top";
-      leftCol.appendChild(badge);
-
-      const nameRow = document.createElement("div");
-      nameRow.style.marginTop = "8px";
-      nameRow.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      nameRow.style.lineHeight = "1.2";
-      nameRow.style.verticalAlign = "top";
-      leftCol.appendChild(nameRow);
-
-      const nameSpan = document.createElement("span");
-      nameSpan.textContent = initialName || name || "이름";
-      nameSpan.style.fontSize = "22px";
-      nameSpan.style.fontWeight = "700";
-      nameSpan.style.color = "#111111";
-      nameSpan.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      nameSpan.style.lineHeight = "1.2";
-      nameSpan.style.verticalAlign = "top";
-      nameRow.appendChild(nameSpan);
-
-      const gradeLabel = document.createElement("div");
-      gradeLabel.textContent = "name grade";
-      gradeLabel.style.position = "absolute";
-      gradeLabel.style.right = "0px";
-      gradeLabel.style.top = "0px";
-      gradeLabel.style.fontSize = "10px";
-      gradeLabel.style.letterSpacing = "0.16em";
-      gradeLabel.style.textTransform = "uppercase";
-      gradeLabel.style.color = "#999999";
-      gradeLabel.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      gradeLabel.style.lineHeight = "1.2";
-      gradeLabel.style.verticalAlign = "top";
-      topRow.appendChild(gradeLabel);
-
-      const gradeCircle = document.createElement("div");
-      const style = gradeStyles[result.grade] ?? gradeStyles.D;
-      gradeCircle.style.position = "absolute";
-      gradeCircle.style.right = "0px";
-      gradeCircle.style.top = "18px";
-      gradeCircle.style.width = "80px";
-      gradeCircle.style.height = "80px";
-      gradeCircle.style.borderRadius = "50%";
-      gradeCircle.style.backgroundColor = style.backgroundColor;
-      gradeCircle.style.display = "inline-block";
-      gradeCircle.style.textAlign = "center";
-      gradeCircle.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      gradeCircle.style.lineHeight = "1.2";
-      gradeCircle.style.verticalAlign = "top";
-      gradeCircle.style.boxSizing = "border-box";
-      gradeCircle.style.paddingTop = "20px"; // 80px의 25%
-
-      const gradeSpan = document.createElement("span");
-      gradeSpan.textContent = style.label;
-      gradeSpan.style.display = "block";
-      gradeSpan.style.textAlign = "center";
-      gradeSpan.style.fontSize = "32px";
-      gradeSpan.style.fontWeight = "800";
-      gradeSpan.style.color = "#ffffff";
-      gradeSpan.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      gradeSpan.style.lineHeight = "1.2";
-      gradeSpan.style.verticalAlign = "top";
-      gradeCircle.appendChild(gradeSpan);
-      topRow.appendChild(gradeCircle);
-
-      const marketBlock = document.createElement("div");
-      marketBlock.style.marginTop = "36px";
-      card.appendChild(marketBlock);
-
-      const marketLabel = document.createElement("div");
-      marketLabel.textContent = "이름 시가총액";
-      marketLabel.style.fontSize = "12px";
-      marketLabel.style.fontWeight = "600";
-      marketLabel.style.color = "#555555";
-      marketLabel.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      marketLabel.style.lineHeight = "1.2";
-      marketLabel.style.verticalAlign = "top";
-      marketBlock.appendChild(marketLabel);
-
-      const marketDesc = document.createElement("div");
-      marketDesc.style.marginTop = "6px";
-      marketDesc.style.fontSize = "11px";
-      marketDesc.style.color = "#999999";
-      marketDesc.style.lineHeight = "1.5";
-      marketDesc.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      marketDesc.style.verticalAlign = "top";
-      marketDesc.textContent =
-        result.grade === "S"
-          ? "시장 최상위권 프리미엄 이름입니다."
-          : result.grade === "A"
-          ? "탄탄한 성장성을 가진 우량 이름이에요."
-          : result.grade === "B"
-          ? "꾸준히 올라갈 잠재력이 큰 이름입니다."
-          : result.grade === "C"
-          ? "조용하지만 알찬 가치주 같은 이름이에요."
-          : "아직 저평가된 보석 같은 이름입니다.";
-      marketBlock.appendChild(marketDesc);
-
-      const marketCenter = document.createElement("div");
-      marketCenter.style.marginTop = "26px";
-      marketCenter.style.textAlign = "center";
-      marketCenter.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      marketCenter.style.lineHeight = "1.2";
-      marketCenter.style.verticalAlign = "top";
-      marketBlock.appendChild(marketCenter);
-
-      const marketCapLabel = document.createElement("div");
-      marketCapLabel.textContent = "MARKET CAP";
-      marketCapLabel.style.fontSize = "10px";
-      marketCapLabel.style.letterSpacing = "0.18em";
-      marketCapLabel.style.textTransform = "uppercase";
-      marketCapLabel.style.color = "#999999";
-      marketCapLabel.style.marginBottom = "10px";
-      marketCapLabel.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      marketCapLabel.style.lineHeight = "1.2";
-      marketCapLabel.style.verticalAlign = "top";
-      marketCenter.appendChild(marketCapLabel);
-
-      const marketValue = document.createElement("div");
-      marketValue.textContent = `${result.marketCap.toLocaleString(
-        "ko-KR",
-      )}억`;
-      marketValue.style.fontSize = "40px";
-      marketValue.style.fontWeight = "800";
-      marketValue.style.color = "#111111";
-      marketValue.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      marketValue.style.lineHeight = "1.2";
-      marketValue.style.verticalAlign = "top";
-      marketCenter.appendChild(marketValue);
-
-      const divider1 = document.createElement("div");
-      divider1.style.marginTop = "32px";
-      divider1.style.borderTop = "1px solid #f0f0f0";
-      card.appendChild(divider1);
-
-      const commentBlock = document.createElement("div");
-      commentBlock.style.marginTop = "16px";
-      card.appendChild(commentBlock);
-
-      const commentTitle = document.createElement("div");
-      commentTitle.textContent = "💡 한 줄 코멘트";
-      commentTitle.style.fontSize = "12px";
-      commentTitle.style.fontWeight = "600";
-      commentTitle.style.color = "#333333";
-      commentTitle.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      commentTitle.style.lineHeight = "1.2";
-      commentTitle.style.verticalAlign = "top";
-      commentBlock.appendChild(commentTitle);
-
-      const commentText = document.createElement("div");
-      commentText.textContent = result.comment;
-      commentText.style.marginTop = "8px";
-      commentText.style.fontSize = "12px";
-      commentText.style.color = "#555555";
-      commentText.style.lineHeight = "1.5";
-      commentText.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      commentText.style.verticalAlign = "top";
-      commentBlock.appendChild(commentText);
-
-      const divider2 = document.createElement("div");
-      divider2.style.marginTop = "24px";
-      divider2.style.borderTop = "1px solid #f0f0f0";
-      card.appendChild(divider2);
-
-      const sameNameBlock = document.createElement("div");
-      sameNameBlock.style.marginTop = "16px";
-      card.appendChild(sameNameBlock);
-
-      const sameNameTitle = document.createElement("div");
-      sameNameTitle.textContent = "👥 동명이인 유명인";
-      sameNameTitle.style.fontSize = "12px";
-      sameNameTitle.style.fontWeight = "600";
-      sameNameTitle.style.color = "#333333";
-      sameNameTitle.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      sameNameTitle.style.lineHeight = "1.2";
-      sameNameTitle.style.verticalAlign = "top";
-      sameNameBlock.appendChild(sameNameTitle);
-
-      const sameNameList = document.createElement("div");
-      sameNameList.style.marginTop = "8px";
-      sameNameList.style.fontSize = "12px";
-      sameNameList.style.color = "#555555";
-      sameNameList.style.lineHeight = "1.5";
-      sameNameList.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      sameNameList.style.verticalAlign = "top";
-
-      if (result.sameName.length > 0) {
-        result.sameName.forEach((person) => {
-          const item = document.createElement("div");
-          item.textContent = `• ${person}`;
-          item.style.fontFamily = '"Arial","Helvetica",sans-serif';
-          item.style.lineHeight = "1.2";
-          item.style.verticalAlign = "top";
-          sameNameList.appendChild(item);
-        });
-      } else {
-        const empty = document.createElement("div");
-        empty.textContent =
-          "등록된 동명이인 정보가 없어요. 아마도 이 이름의 원조일지도요!";
-        empty.style.fontFamily = '"Arial","Helvetica",sans-serif';
-        empty.style.lineHeight = "1.2";
-        empty.style.verticalAlign = "top";
-        sameNameList.appendChild(empty);
-      }
-      sameNameBlock.appendChild(sameNameList);
-
-      const watermark = document.createElement("div");
-      watermark.textContent = "이름값 계산기";
-      watermark.style.marginTop = "32px";
-      watermark.style.textAlign = "center";
-      watermark.style.fontSize = "11px";
-      watermark.style.fontWeight = "600";
-      watermark.style.color = "#999999";
-      watermark.style.fontFamily = '"Arial","Helvetica",sans-serif';
-      watermark.style.lineHeight = "1.2";
-      watermark.style.verticalAlign = "top";
-      card.appendChild(watermark);
-
-      offscreen.appendChild(card);
-      document.body.appendChild(offscreen);
+      const domtoimage = (await import("dom-to-image-more")).default;
 
       if (document.fonts?.ready) {
         await document.fonts.ready;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      const canvas = await html2canvas(offscreen, {
-        backgroundColor: "#ffffff",
+      const dataUrl = await domtoimage.toPng(cardRef.current, {
         scale: 2,
-        useCORS: true,
-        logging: false,
+        bgcolor: "#f8f8f8",
       });
-      const dataUrl = canvas.toDataURL("image/png");
 
       const link = document.createElement("a");
       link.href = dataUrl;
-      link.download = `${(initialName || name || "이름")}_이름값.png`;
+      link.download = `${initialName || name || "이름"}_이름값.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      document.body.removeChild(offscreen);
     } catch (e) {
       console.error(e);
       alert("이미지 저장 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.");
@@ -573,7 +285,7 @@ export default function HomePage() {
 
         {hasResult && result && (
           <section className="space-y-4">
-            <div className="mt-2 rounded-[16px] border border-[#e0e0e0] bg-[#f8f8f8] px-6 py-7 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+            <div ref={cardRef} className="mt-2 rounded-[16px] border border-[#e0e0e0] bg-[#f8f8f8] px-6 py-7 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
               <div className="h-[3px] w-full bg-gradient-to-r from-[#ffafcc] to-[#bde0fe] rounded-full mb-4" />
               <div className="mb-5 flex justify-between">
                 <div>

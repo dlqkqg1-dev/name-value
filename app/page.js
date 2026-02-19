@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const PRIMARY_PINK = "#ffafcc";
@@ -151,7 +151,7 @@ function HomePageContent() {
   const [name, setName] = useState(initialName);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const cardRef = useRef(null);
+  const [toast, setToast] = useState(false);
 
   const hasResult = useMemo(
     () => isKoreanName(initialName),
@@ -192,32 +192,15 @@ function HomePageContent() {
     router.push(`/?${params.toString()}`);
   }, [router]);
 
-  const handleShare = useCallback(async () => {
+  const handleCopyLink = useCallback(async () => {
     try {
-      if (!result || !cardRef.current) return;
-
-      const domtoimage = (await import("dom-to-image-more")).default;
-
-      if (document.fonts?.ready) {
-        await document.fonts.ready;
-      }
-
-      const dataUrl = await domtoimage.toPng(cardRef.current, {
-        scale: 2,
-        bgcolor: "#f8f8f8",
-      });
-
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `${initialName || name || "이름"}_이름값.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      await navigator.clipboard.writeText(window.location.href);
+      setToast(true);
+      setTimeout(() => setToast(false), 2000);
     } catch (e) {
       console.error(e);
-      alert("이미지 저장 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.");
     }
-  }, [initialName, name, result]);
+  }, []);
 
   const animatedMarketCap = useCountUp(
     result?.marketCap ?? 0,
@@ -285,7 +268,7 @@ function HomePageContent() {
 
         {hasResult && result && (
           <section className="space-y-4">
-            <div ref={cardRef} className="mt-2 rounded-[16px] border border-[#e0e0e0] bg-[#f8f8f8] px-6 py-7 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+            <div className="mt-2 rounded-[16px] border border-[#e0e0e0] bg-[#f8f8f8] px-6 py-7 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
               <div className="h-[3px] w-full bg-gradient-to-r from-[#ffafcc] to-[#bde0fe] rounded-full mb-4" />
               <div className="mb-5 flex justify-between">
                 <div>
@@ -384,10 +367,10 @@ function HomePageContent() {
             <div className="mt-4 flex flex-col gap-2">
               <button
                 type="button"
-                onClick={handleShare}
+                onClick={handleCopyLink}
                 className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#ffafcc] text-sm font-semibold text-[#111] shadow-sm transition hover:brightness-95"
               >
-                📷 결과 카드 이미지로 저장하기
+                🔗 결과 링크 복사하기
               </button>
               <button
                 type="button"
@@ -397,6 +380,12 @@ function HomePageContent() {
                 ↩️ 다른 이름 계산하기
               </button>
             </div>
+
+            {toast && (
+              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-[#111] px-4 py-2 text-xs font-medium text-white shadow-lg">
+                링크가 복사됐어요!
+              </div>
+            )}
           </section>
         )}
       </main>
